@@ -11,7 +11,7 @@ GPIO.output(12,1)
 GPIO.output(16,1)
 GPIO.output(18,1)
 
-time_ret_cil = 0.05
+time_ret_cil = 0.1
 
 def disparar_cilindro_1():
     GPIO.output(18, 0)

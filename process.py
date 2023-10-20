@@ -8,43 +8,49 @@ from pre_processamento import *
 from obter_caracteristicas import *
 
 class Video(QThread):
+    
+    max_val_canny = 200
+    min_val_canny = 100
+    
+    
     #Imagens
     change_pixmap = pyqtSignal(QImage)
     change_pixmap_canny = pyqtSignal(QImage)
     change_pixmap_imagem_result = pyqtSignal(QImage)
     
-    #por cor
     cor_amarelo = pyqtSignal(int)
-    amarelo = 0
     cor_verde = pyqtSignal(int)
-    verde = 0
     cor_laranja = pyqtSignal(int)
-    laranja = 0
     cor_n_reconhecida = pyqtSignal(int)
+    
+    tamanho_pequeno = pyqtSignal(int)
+    tamanho_medio = pyqtSignal(int)
+    tamanho_grande = pyqtSignal(int)
+    tamanho_n_reconhecido = pyqtSignal(int)
+    
+    num_aceitos = pyqtSignal(int)
+    num_n_aceitos = pyqtSignal(int)
+    
+    #por cor
+    
+    amarelo = 0
+    verde = 0
+    laranja = 0
     cor_n_r = 0
     
     #Por tamanho
-    tamanho_pequeno = pyqtSignal(int)
+    
     tam_p = 0
-    tamanho_medio = pyqtSignal(int)
     tam_m = 0
-    tamanho_grande = pyqtSignal(int)
     tam_g = 0
-    tamanho_n_reconhecido = pyqtSignal(int)
     tam_n_r = 0
     
     #Aceito ou não no processo
-    num_aceitos = pyqtSignal(int)
     num_a = 0
-    num_n_aceitos = pyqtSignal(int)
     num_n_a = 0
     
-    #Temporizadores dos pistões
-    time1 = 3.6
-    time2 = 5.5
-    time3 = 7.3
-    
-    #
+  
+    #Auxiliar
     ultima_analise = 0
     limiar_tempo_analise = 0.7
     
@@ -56,6 +62,26 @@ class Video(QThread):
         self.modo_sistema = 1
         self.imagem_result =  np.zeros([90, 90, 3],  dtype=np.uint8)
         
+        
+        self.time1 = 4
+        self.time2 = 5.9
+        self.time3 = 7.5
+        
+        self.pequeno_min = 10
+        self.pequeno_max = 17.99
+        self.medio_min = 18
+        self.medio_max = 32.99
+        self.grande_min = 33
+        self.grande_max = 99.99
+        
+        self.area_aceitavel = 1256.63
+        
+        self.cor_padrao = "VERDE"
+        
+        self.forma_padrao = "FACE CIRCULAR"
+        
+        self.fator_escala = 360
+        
     def atualizar_imagem_result(self, imagem):
         self.imagem_result = cv2.cvtColor(imagem, cv2.COLOR_BGR2RGB)
         h, w, ch = self.imagem_result.shape
@@ -64,12 +90,36 @@ class Video(QThread):
         self.change_pixmap_imagem_result.emit(convertToQtFormat3)
         
             
+    def agendar_cilindro1(self):
+        date1 = datetime.now() + timedelta(0, self.time1)
+        th1 = Untiltime(disparar_cilindro_1, dateOrtime=date1)
+        th1.start()
     
+    def agendar_cilindro2(self):
+        date2 = datetime.now() + timedelta(0, self.time2)
+        th2 = Untiltime(disparar_cilindro_2, dateOrtime=date2)
+        th2.start()
+    
+    def agendar_cilindro3(self):
+        date3 = datetime.now() + timedelta(0, self.time3)
+        th3 = Untiltime(disparar_cilindro_3, dateOrtime=date3)
+        th3.start()
+        
     def run(self):
         cap = cv2.VideoCapture(0)
-       
         
         while cap.isOpened():
+            """
+            print(f"Tempos: {self.time1}, {self.time2}, {self.time3}")
+            print(f"Pequeno: {self.pequeno_min} a {self.pequeno_max}")
+            print(f"Médio: {self.medio_min} a {self.medio_max}")
+            print(f"Grande: {self.grande_min} a {self.grande_max}")
+            print(f"Área aceita: {self.area_aceitavel}")
+            print(f"Cor padrão: {self.cor_padrao}")
+            print(f"Forma padrão: {self.forma_padrao}")
+            print(f"Fator de escala: {self.fator_escala}")
+            print("-------------------------------")
+            """
             ret, frame = cap.read()
             
             if not ret:
@@ -82,9 +132,7 @@ class Video(QThread):
             
             imagem_cinza = tornar_imagem_cinza(imagem_perspectiva_fake)
             
-            max_val_canny = 200
-            min_val_canny = 80
-            imagem_canny = aplicar_filtro_canny(imagem_cinza, min_val_canny, max_val_canny)
+            imagem_canny = aplicar_filtro_canny(imagem_cinza, self.min_val_canny, self.max_val_canny)
             
             indices = np.where(imagem_canny == [255])
             tam = len(indices[0])
@@ -111,7 +159,7 @@ class Video(QThread):
                 if(diff_def < limiar_dist_centro and diff_def > 0):
                     
                     conts, hierarchy = obter_contornos(imagem_canny, modo=cv2.RETR_EXTERNAL)
-                    centro, final_contours = obter_caracteristicas_imagem(imagem_perspectiva_fake, conts)
+                    centro, final_contours, tipo_peca = obter_caracteristicas_imagem(imagem_perspectiva_fake, conts)
                     
                     #Cores
                     if self.modo_sistema == 1:
@@ -122,24 +170,15 @@ class Video(QThread):
                             self.ultima_analise = time.time()
                             
                             if(cor == "VERDE"):
-                                date1 = datetime.now() + timedelta(0, self.time1)
-                                th1 = Untiltime(disparar_cilindro_1, dateOrtime=date1)
-                                th1.start()
+                                self.agendar_cilindro1()
                                 self.verde = self.verde+1
                                 self.cor_verde.emit(self.verde)
-                               
-                                
                             elif(cor == "AMARELO"):
-                                date2 = datetime.now() + timedelta(0, self.time2)
-                                th2 = Untiltime(disparar_cilindro_2, dateOrtime=date2)
-                                th2.start()
+                                self.agendar_cilindro2()
                                 self.amarelo = self.amarelo+1
                                 self.cor_amarelo.emit(self.amarelo)
-                               
                             elif (cor == "LARANJA"):
-                                date3 = datetime.now() + timedelta(0, self.time3)
-                                th3 = Untiltime(disparar_cilindro_3, dateOrtime=date3)
-                                th3.start()
+                                self.agendar_cilindro3()
                                 self.laranja = self.laranja+1
                                 self.cor_laranja.emit(self.laranja)
                             
@@ -151,33 +190,31 @@ class Video(QThread):
                             cv2.imshow("Result", imagem_r)
                             self.atualizar_imagem_result(imagem_r)
                             
-                    # Pequeno, médio, grande  q
+                    # Pequeno, médio, grande
                     elif self.modo_sistema == 2:
-                        fator_escala = 360
-                        tam, p, imagem_r = inferir_tamanho(imagem_perspectiva_fake, final_contours, centro, scale=fator_escala/100)
+                        
+                        intervalos = [[self.pequeno_min, self.pequeno_max],
+                                      [self.medio_min, self.medio_max],
+                                      [self.grande_min, self.grande_max]]
+                        
+                        tam, p, imagem_r = inferir_tamanho(imagem_perspectiva_fake, final_contours, centro, self.fator_escala/100, intervalos)
                         
                         #Disparo do cilindro
                         if tam != None and tam != "" and time.time() - self.ultima_analise >= self.limiar_tempo_analise:
                             self.ultima_analise = time.time()
                             
                             if(tam == "PEQUENO"):
-                                date1 = datetime.now() + timedelta(0, self.time1)
-                                th1 = Untiltime(disparar_cilindro_1, dateOrtime=date1)
-                                th1.start()
+                                self.agendar_cilindro1()
                                 self.tam_p = self.tam_p+1
                                 self.tamanho_pequeno.emit(self.tam_p)
                                 
                             elif(tam == "MEDIO"):
-                                date2 = datetime.now() + timedelta(0, self.time2)
-                                th2 = Untiltime(disparar_cilindro_2, dateOrtime=date2)
-                                th2.start()
+                                self.agendar_cilindro2()
                                 self.tam_m = self.tam_m+1
                                 self.tamanho_medio.emit(self.tam_m)
                                 
                             elif (tam == "GRANDE"):
-                                date3 = datetime.now() + timedelta(0, self.time3)
-                                th3 = Untiltime(disparar_cilindro_3, dateOrtime=date3)
-                                th3.start()
+                                self.agendar_cilindro3()
                                 self.tam_g = self.tam_g+1
                                 self.tamanho_grande.emit(self.tam_g)
                             else:
@@ -186,33 +223,26 @@ class Video(QThread):
                                 image_r = np.zeros([90, 90, 3],  dtype=np.uint8)
                               
                         print(f"TAMANHO: {tam} e {p}")
-                        self.atualizar_imagem_result(imagem_r)
+                        if tam != None and p != None:
+                            self.atualizar_imagem_result(imagem_r)
                         
                     #Fora do processo
                     elif self.modo_sistema == 3 and time.time() - self.ultima_analise >= self.limiar_tempo_analise:
                         self.ultima_analise = time.time()
                         
-                        padrao_cor = "VERDE"
-                        area_aceitavel = 1256.63
-                    
                         cor = inferir_cor(imagem_perspectiva_fake, centro)[0]
                         
-                        ret_circ = False
+                        ret_area = False
                         
                         if len(final_contours) > 0:
                             area = final_contours[0][1]
-                            ret_circ = validar_area(area, area_aceitavel, 3.6, limiar=50)
+                            ret_area = validar_area(area, self.area_aceitavel, self.fator_escala/100, limiar=50)
                             
-                        
-                        
-                        resp = cor == padrao_cor and ret_circ
+                        resp = cor == self.cor_padrao and ret_area and tipo == self.forma_padrao
                        
                         
-                         
                         if not resp: 
-                            date3 = datetime.now() + timedelta(0, self.time3)
-                            th3 = Untiltime(disparar_cilindro_3, dateOrtime=date3)
-                            th3.start()
+                            self.agendar_cilindro3()
                             self.num_n_a = self.num_n_a+1
                             self.num_n_aceitos.emit(self.num_n_a)
                             self.imagem_result =  np.zeros([40, 180, 3],  dtype=np.uint8)

@@ -32,7 +32,7 @@ def reorder(myPoints):
     
     return myPointsNew
 
-def retangulo(imgConts2, obj, scale, centro):
+def retangulo(imgConts2, obj, scale, centro, intervalos):
     nPoints = reorder(obj[3])
     
     nw = round(findDistance(nPoints[0][0]//scale, nPoints[1][0]//scale), 1)
@@ -64,17 +64,17 @@ def retangulo(imgConts2, obj, scale, centro):
     pivo = np.max([nw, nh])
     
     tamanho_p = ""
-    if pivo >= 10 and pivo < 17:
+    if pivo >= intervalo[0][0] and pivo < intervalo[0][1]:
         tamanho_p =  "PEQUENO"
-    elif pivo >= 18 and pivo < 32:
+    elif pivo >= intervalo[1][0] and pivo < intervalo[1][1]:
         tamanho_p = "MEDIO"
-    elif pivo >= 32 and pivo <= 47:
+    elif pivo >= intervalo[2][0] and pivo <= intervalo[2][1]:
         tamanho_p =  "GRANDE"
     
     return tamanho_p, pivo, imgConts2
 
 
-def circulo(imgConts2, obj, scale, centro):
+def circulo(imgConts2, obj, scale, centro, intervalos):
     p1x = obj[3][0][0][0]
     p1y = obj[3][0][0][1]
     
@@ -100,11 +100,11 @@ def circulo(imgConts2, obj, scale, centro):
     
     d = raio * 2
     palavra_p = ""
-    if d >= 10 and d <= 17:
+    if d >= intervalo[0][0] and d <= intervalo[0][1]:
         palavra_p =  "PEQUENO"
-    elif d >= 18 and d <= 32:
+    elif d >= intervalo[1][0] and d <= intervalo[1][1]:
         palavra_p = "MEDIO"
-    elif d >= 32 and d <= 47:
+    elif d >= intervalo[2][0] and d <= intervalo[2][1]:
         palavra_p = "GRANDE"
     
     return palavra_p, d, imgConts2
@@ -156,17 +156,17 @@ def inferir_cor(imagem, centro):
 
     return cores_label[i], cores_img_copy
     
-def inferir_tamanho(imagem, final_contours, centro, scale):   
+def inferir_tamanho(imagem, final_contours, centro, scale, intervalos):   
     result = ""
     for obj in final_contours:
         if obj[0] == 4:
-            result = retangulo(imagem, obj, scale, centro)
+            result = retangulo(imagem, obj, scale, centro, intervalos)
         elif obj[0] == 5:
             print("Prepara o pentágono")
         elif obj[0] == 6:
             print("Prepara o hexágono")
         elif obj[0] > 6:
-            result = circulo(imagem, obj, scale, centro)
+            result = circulo(imagem, obj, scale, centro, intervalos)
     
     if(len(result) == 0):
         return None, None, None
@@ -201,17 +201,17 @@ def obter_caracteristicas_imagem(imagem, contornos):
             
             a = len(approx)
             if a  == 3:
-              j = 0
+              j = ""
             elif a == 4:
-              j = 1
+              j = "FACE QUADRADA"
             elif a == 5:
-              j = 2
+              j = ""
             elif a == 6:
               j = 3
             else:
-              j = 4
+              j = "FACE CIRCULAR"
 
-    return centro_figura, final_contours
+    return centro_figura, final_contours, j
     
 def obter_contornos(imagem, modo): 
     contours, hierarchy = cv2.findContours(imagem, modo, cv2.CHAIN_APPROX_SIMPLE)

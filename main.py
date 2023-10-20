@@ -41,6 +41,33 @@ class Janela(QMainWindow):
         self.label_titulo_img_result.setText("COR DO CENTRO DO OBJETO")
         renderizar_elementos_cor(self, self.infos_modo)
         
+        #Tempos disparos pistões
+        self.tempo_pistao1.valueChanged.connect(self.atualizar_valor_temp_cil1)
+        self.tempo_pistao2.valueChanged.connect(self.atualizar_valor_temp_cil2)
+        self.tempo_pistao3.valueChanged.connect(self.atualizar_valor_temp_cil3)
+        
+        self.pequeno_min.valueChanged.connect(self.atualizar_valor_pequeno_min)
+        self.pequeno_max.valueChanged.connect(self.atualizar_valor_pequeno_max)
+        
+        self.medio_min.valueChanged.connect(self.atualizar_valor_medio_min)
+        self.medio_max.valueChanged.connect(self.atualizar_valor_medio_max)
+        
+        self.grande_min.valueChanged.connect(self.atualizar_valor_grande_min)
+        self.grande_max.valueChanged.connect(self.atualizar_valor_grande_max)
+        
+        #Área
+        self.area_aceitavel.valueChanged.connect(self.atualizar_valor_area_aceita)
+        
+        #Cor padrão
+        self.cor_padrao.currentTextChanged.connect(self.atualizar_valor_cor_padrao)
+        
+        #forma padrão
+        self.forma_padrao.currentTextChanged.connect(self.atualizar_valor_forma_padrao)
+        
+        #fator de escala
+        self.fator_escala.valueChanged.connect(self.atualizar_valor_fator_escala)
+        
+        
    
     def radio1_clicked(self):        
         self.label_modo.setText('MODO 1 (COR)')
@@ -144,6 +171,62 @@ class Janela(QMainWindow):
     def atualizar_num_n_aceitos(self, valor):
         self.infos_modo.itemAt(1).itemAt(1).widget().display(valor)
         
+    #Mudanças de valores dos tempos de ativação dos cilindros
+    @pyqtSlot(float)
+    def atualizar_valor_temp_cil1(self, value):
+        self.vs.time1 = round(value, 2)
+    
+    @pyqtSlot(float)
+    def atualizar_valor_temp_cil2(self, value):
+        self.vs.time2 = round(value, 2)
+    
+    @pyqtSlot(float)
+    def atualizar_valor_temp_cil3(self, value):
+        self.vs.time3 = round(value, 2)
+    
+    #Mudanças de valores dos intervalos de dimensões
+    @pyqtSlot(float)
+    def atualizar_valor_pequeno_min(self, value):
+        self.vs.pequeno_min = round(value, 2)
+    
+    @pyqtSlot(float)
+    def atualizar_valor_pequeno_max(self, value):
+        self.vs.pequeno_max = round(value, 2)
+    
+    @pyqtSlot(float)
+    def atualizar_valor_medio_min(self, value):
+        self.vs.medio_min = round(value, 2)
+    
+    @pyqtSlot(float)
+    def atualizar_valor_medio_max(self, value):
+        self.vs.medio_max = round(value, 2)
+        
+    @pyqtSlot(float)
+    def atualizar_valor_grande_min(self, value):
+        self.vs.grande_min = round(value, 2)
+    
+    @pyqtSlot(float)
+    def atualizar_valor_grande_max(self, value):
+        self.vs.grande_max = round(value, 2)
+    
+    #Área
+    @pyqtSlot(float)
+    def atualizar_valor_area_aceita(self, value):
+        self.vs.area_aceitavel = round(value, 2)
+    
+    #cor padrão
+    @pyqtSlot(str)
+    def atualizar_valor_cor_padrao(self, value):
+        self.vs.cor_padrao = value
+    
+    @pyqtSlot(str)
+    def atualizar_valor_forma_padrao(self, value):
+        self.vs.forma_padrao = value
+        
+    #atualizar valor do fator de escala
+    @pyqtSlot(int)
+    def atualizar_valor_fator_escala(self, value):
+        self.vs.fator_escala = value
        
 if __name__ == "__main__":
     import sys
